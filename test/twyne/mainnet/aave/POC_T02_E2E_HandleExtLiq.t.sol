@@ -16,12 +16,19 @@
 // depending on WHEN handleExternalLiquidation is called, not just on the
 // liquidation itself. This is unfair to borrowers and LPs.
 //
+// Attack constraints (from Copilot Opus 4.6 review):
+// - healthFactor >= 1e18 limits the exploitable price window (too-low prices revert)
+// - Caller must supply USDC to repay remaining debt (economic gate)
+// - When _maxRelease > 0, anyone can call (borrower cannot preempt)
+// - Natural price volatility alone causes unfair splits (no manipulation needed)
+// - No admin recovery function to correct misallocation post-hoc
+//
 // Attack path:
 // 1. Alice opens a Twyne position: 5 WETH collateral, borrow $12k USDC, 90% LTV
 // 2. WETH drops 35% -> Aave partially liquidates (repay 20% debt)
 // 3. After Aave liquidation, MEV searcher monitors WETH price
 // 4. At favorable price, searcher calls handleExternalLiquidation to maximize reward
-// 5. Different prices -> different liquidator reward (~0.7 aWETH delta ~$1,750)
+// 5. Different prices -> different liquidator reward (~0.84 aWETH delta ~$2,100)
 
 pragma solidity ^0.8.28;
 
